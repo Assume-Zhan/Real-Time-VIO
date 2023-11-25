@@ -24,7 +24,8 @@ RUN apt-get update && apt-get upgrade -y && \
                     libxrender-dev \
                     libxi-dev \
                     libxkbcommon-dev \
-                    libxkbcommon-x11-dev
+                    libxkbcommon-x11-dev \
+                    libsm6
 
 # add user with default bash
 RUN adduser --disabled-password --gecos '' --shell /bin/bash ${USERNAME} && \
