@@ -1,0 +1,30 @@
+version: '3.0'
+services:
+  # Container-1
+  pytorch-vio:
+    build: .
+    image: ml/vio-project:latest
+    container_name: pytorch-vio
+    stdin_open: true
+    tty: true
+    privileged: true
+    command: bash
+    network_mode: host
+    working_dir: /home/user/ML_ws
+
+    # Add GPU support
+    runtime: nvidia
+
+    # Container Settings
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      # Mount local timezone
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      # X-11 mount
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # Direct Rendering Infrastructure
+      - /dev/dri:/dev/dri
+      # Mount workspace
+      - ..:/home/user/ML_ws
