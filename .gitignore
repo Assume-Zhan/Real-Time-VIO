@@ -1,6 +1,7 @@
 # Dataset Ignored folder
 data/
 datasets/
+models/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
