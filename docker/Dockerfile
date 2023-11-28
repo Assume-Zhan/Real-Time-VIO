@@ -1,7 +1,7 @@
 FROM nvcr.io/nvidia/pytorch:21.08-py3
 
 # Arguments
-ARG USERNAME=user
+ARG USERNAME=lch
 
 # Update
 RUN apt-get update && apt-get upgrade -y && \
