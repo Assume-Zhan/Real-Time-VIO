@@ -58,18 +58,3 @@ class PoseNet(nn.Module):
 
         output = self.FullConnected(x)
         return output
-                
-# Test the model
-if __name__ == '__main__':
-    model = PoseNet()
-    model = model.cuda()
-    
-    # Pytorch model summary
-    summary(model, input_size=(1, 3, 150, 600))
-    
-    # Input as a tensor
-    input_ = torch.randn(1, 3, 150, 600)
-    input_ = input_.cuda()
-    
-    output = model(input_)
-    print(output.size())
