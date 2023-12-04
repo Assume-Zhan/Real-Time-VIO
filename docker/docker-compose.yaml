@@ -10,7 +10,7 @@ services:
     privileged: true
     command: bash
     network_mode: host
-    working_dir: /home/lch/ML_ws
+    working_dir: /home/user/ML_ws
 
     # Add GPU support
     runtime: nvidia
@@ -27,4 +27,4 @@ services:
       # Direct Rendering Infrastructure
       - /dev/dri:/dev/dri
       # Mount workspace
-      - ..:/home/lch/ML_ws
+      - ..:/home/user/ML_ws

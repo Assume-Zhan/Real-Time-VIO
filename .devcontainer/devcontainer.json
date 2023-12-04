@@ -2,7 +2,7 @@
     "name": "Pytorch and OpenCV Container",
     "dockerComposeFile": "../docker/docker-compose.yaml",
     "service": "pytorch-vio",
-    "workspaceFolder": "/home/lch/ML_ws",
+    "workspaceFolder": "/home/user/ML_ws",
     "customizations": {
         "vscode": {
             "extensions": [
