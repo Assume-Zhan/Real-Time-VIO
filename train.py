@@ -22,9 +22,9 @@ if __name__ == '__main__':
     overlap = 0
     sample_times = 1
     folder_list = ['04']
-    seq_len_range = [1, 1]
+    seq_len_range = [5, 7]
     df = get_data_info(seq_len_range, overlap, sample_times=sample_times,
-                       data_path='./datasets/KITTI/training/image_0/*.png',
+                       data_path='./datasets/KITTI/training/04/*.png',
                        gt_path='./datasets/KITTI/pose_GT/04.npy')
     
     # Customized Dataset, Sampler
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     model.train()
     
     # Setup Optimizer
-    optimizer = optim.SGD(model.parameters(), lr = 0.001)
+    optimizer = optim.SGD(model.parameters(), lr = 0.003)
     
     print('################# Start training #################')
     
@@ -51,15 +51,22 @@ if __name__ == '__main__':
     for i in range(10):
         loss_all = 0
         for _, x, y in tqdm(dataloader):
+
+            # y = y.view(y.size(0) * y.size(1), -1)
             
             x = torch.squeeze(x).cuda()
             y = torch.squeeze(y).cuda()
-            
-            # normalize y use pytorch normalize
-            y = torch.nn.functional.normalize(y, dim=1)
-            
+
+            # First size: batch size
+            # Second size: sequence length
+            # Third size: channel
+            # Fourth size: height
+            # Fifth size: width
             
             optimizer.zero_grad()
+
+            # Normalize the input
+            x = x / 255.0
 
             # forward + backward + optimize
             prediction = model(x)
@@ -71,6 +78,7 @@ if __name__ == '__main__':
             # back prop
             loss.backward()
             optimizer.step()
+
         print('Epoch: {}, Loss: {}'.format(i, loss_all))
         
     print('################# Finish training #################')
