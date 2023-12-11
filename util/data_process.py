@@ -66,7 +66,7 @@ def create_pose_data(folder='../datasets/KITTI/pose_GT/'):
             # poses = [[poses[i] - poses[i-1]] for i in range(1, len(poses))]
 
             # Calculate relative poses   line 68 to line 90 can be removed it not using relative pose
-            relative_poses = [poses[0]]  # Assuming the first pose is the reference
+            relative_poses = []  # Assuming the first pose is the reference
             for i in range(1, len(poses)):
                 prev_pose = np.reshape(poses[i - 1][-9:], (3, 3))  # Extract previous rotation matrix
                 prev_t = poses[i - 1][:3]  # Extract previous translation vector
