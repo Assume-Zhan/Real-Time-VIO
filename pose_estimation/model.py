@@ -17,12 +17,14 @@ class PoseNet(nn.Module):
             # Layer-1
             nn.Conv2d(in_channels = 3, out_channels = 48, kernel_size = 11, stride = 4, padding = 2), # Out : n x 48 x 55 x 55
             nn.ReLU(), # Activation
+            nn.BatchNorm2d(48), # Batch Normalization
             # Max Pooling, always s = 2, z = 3
             nn.MaxPool2d(kernel_size = 3, stride = 2), # Out : n x 48 x 27 x 27
 
             # Layer-2
             nn.Conv2d(in_channels = 48, out_channels = 128, kernel_size = 3, stride = 1, padding = 1), # Out : n x 128 x 27 x 27
             nn.ReLU(),
+            nn.BatchNorm2d(128),
             nn.MaxPool2d(kernel_size = 3, stride = 2),
 
             # Layer-3
@@ -51,12 +53,33 @@ class PoseNet(nn.Module):
             nn.Linear(2048, 6)
         )
 
+        # RNN
+        self.Recurrent = nn.LSTM(input_size = 128 * 6 * 6, hidden_size = 1024, num_layers = 2, batch_first = True)
+
+        # Final linear
+        self.Linear = nn.Linear(1024, 6)
+
     def forward(self, x):
+
+        # x: (batch, seq_len, channel, width, height)
+        batch_size = x.size(0)
+        seq_len = x.size(1)
+
+        # CNN
+        x = x.view(batch_size * seq_len, x.size(2), x.size(3), x.size(4))
+
         x = self.Convolution(x)
         x = self.avgpool(x)
-        x = x.view(x.size(0), 128 * 6 * 6)
 
-        output = self.FullConnected(x)
+        # Fully connected
+        # output = self.FullConnected(x)
+
+        # RNN
+        x = x.view(batch_size, seq_len, -1)
+        output, _ = self.Recurrent(x)
+        output = self.Linear(output)
+
+        # Reshape to (batch * seq_len, 6)
         return output
                 
 # Test the model
@@ -65,10 +88,10 @@ if __name__ == '__main__':
     model = model.cuda()
     
     # Pytorch model summary
-    summary(model, input_size=(1, 3, 150, 600))
+    summary(model, input_size=(1, 5, 3, 600, 150))
     
     # Input as a tensor
-    input_ = torch.randn(1, 3, 150, 600)
+    input_ = torch.randn(2, 7, 3, 600, 150)
     input_ = input_.cuda()
     
     output = model(input_)
