@@ -46,8 +46,8 @@ def clean_unused_images():
 def create_pose_data(folder='../datasets/KITTI/pose_GT/'):
     
     # Specified whitch data to use
-    info = {'04': [0, 270]}
- 
+    info = {'01': [0, 270], '02': [0, 270], '03': [0, 270], '04': [0, 270], '05': [0, 2760], '07': [0, 1100], '08': [1100, 5170]}
+    
     # Read from each sequence data
     for video in info.keys():
         fn = '{}{}.txt'.format(folder, video)
@@ -90,7 +90,7 @@ def create_pose_data(folder='../datasets/KITTI/pose_GT/'):
             # 'relative_poses' now contains the relative poses to the previous pose
    
             # Save as .npy file
-            poses = np.array(relative_poses)
+            poses = np.array(poses)
             base_fn = os.path.splitext(fn)[0]
             np.save(base_fn +'.npy', poses)
             
