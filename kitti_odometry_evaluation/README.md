@@ -88,6 +88,7 @@ Find a 6+1 DoF transformation, including translation, rotation, and scaling, tha
 
 ## Evaluation result
 Here shows some evaluation result examples
+
 <img src='misc/run_eg.jpeg' width=640 height=160>
 
 Trajectory comparison
