@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 
 import glob
 import utils.dataset_kittiflow as dataset_kittiflow
+from utils import flow_viz
 
 from models.raft import RAFT
 from utils.utils import InputPadder
@@ -31,7 +32,7 @@ def writeFlowKITTI(filename, uv):
     uv = 64.0 * uv + 2**15
     valid = np.ones([uv.shape[0], uv.shape[1], 1])
     uv = np.concatenate([uv, valid], axis=-1).astype(np.uint16)
-    cv2.imwrite(filename, uv[..., ::-1])
+    cv2.imwrite(filename, uv)
     
 @torch.no_grad()
 def inference(model, data=None, iters=24, output_path='submission'):
@@ -59,6 +60,11 @@ def inference(model, data=None, iters=24, output_path='submission'):
             t2 = time.time()
             
             print("--- %s fps ---" % (1/(t2-t1)))
+            
+            # flow = flow_pr[0].permute(1, 2, 0).cpu().numpy()
+            # flow = flow_viz.flow_to_image(flow)
+            # output_filename = os.path.join(output_path, frame_id)
+            # writeFlowKITTI(output_filename, flow)
             
             flow = padder.unpad(flow_pr[0]).permute(1, 2, 0).cpu().numpy()
             output_filename = os.path.join(output_path, frame_id)

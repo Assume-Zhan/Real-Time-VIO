@@ -3,6 +3,45 @@ import glob
 import numpy as np
 import pandas as pd
 from helper import R_to_angle
+import math
+import torch
+from torchvision import transforms
+from PIL import Image
+from scipy.spatial.transform import Rotation as R
+
+def clean_unused_images():
+    seq_frame = {'00': ['000', '004540'],
+                '01': ['000', '001100'],
+                '02': ['000', '004660'],
+                '03': ['000', '000800'],
+                '04': ['000', '000270'],
+                '05': ['000', '002760'],
+                '06': ['000', '001100'],
+                '07': ['000', '001100'],
+                '08': ['001100', '005170'],
+                '09': ['000', '001590'],
+                '10': ['000', '001200']
+                }
+    for dir_id, img_ids in seq_frame.items():
+        dir_path = '../datasets/KITTI/training/{}/'.format( dir_id)
+        if not os.path.exists(dir_path):
+            continue
+
+        print('Cleaning {} directory'.format(dir_id))
+        start, end = img_ids
+        start, end = int(start), int(end)
+        for idx in range(0, start):
+            img_name = '{:010d}.png'.format(idx)
+            img_path = '../datasets/KITTI/training/{}/{}'.format( dir_id, img_name)
+            if os.path.isfile(img_path):
+                os.remove(img_path)
+        for idx in range(end+1, 10000):
+            img_name = '{:010d}.png'.format(idx)
+            img_path = '../datasets/KITTI/training/{}/{}'.format( dir_id, img_name)
+            if os.path.isfile(img_path):
+                os.remove(img_path)
+                        
+
 
 # Given the poseGT [R|t], transform it to [theta_x, theta_y, theta_z, x, y, z]
 # And store it as .npy file
@@ -11,38 +50,65 @@ from helper import R_to_angle
 def create_pose_data(folder='../datasets/KITTI/pose_GT/'):
     
     # Specified whitch data to use
-	info = {'04': [0, 270]}
+    info = {'04': [0, 270]}
  
     # Read from each sequence data
-	for video in info.keys():
-		fn = '{}{}.txt'.format(folder, video)
+    for video in info.keys():
+        fn = '{}{}.txt'.format(folder, video)
 
         # Open the file
-		with open(fn) as f:
+        with open(fn) as f:
       
             # Read lines from the file
-			lines = [line.split('\n')[0] for line in f.readlines()]
+            lines = [line.split('\n')[0] for line in f.readlines()]
 
             # Transform poseGT [R|t] to [theta_x, theta_y, theta_z, x, y, z]
-			poses = [ R_to_angle([float(value) for value in l.split(' ')]) for l in lines]
-			
+            poses = [ R_to_angle([float(value) for value in l.split(' ')]) for l in lines]
+            
             # TODO: we need to calculate the difference here
-			# Calculate the difference between each pose
-			# poses = [[poses[i] - poses[i-1]] for i in range(1, len(poses))]
+            # Calculate the difference between each pose
+            # poses = [[poses[i] - poses[i-1]] for i in range(1, len(poses))]
+
+            # Calculate relative poses   line 68 to line 90 can be removed it not using relative pose
+            relative_poses = []  # Assuming the first pose is the reference
+            for i in range(1, len(poses)):
+                prev_pose = np.reshape(poses[i - 1][-9:], (3, 3))  # Extract previous rotation matrix
+                prev_t = poses[i - 1][:3]  # Extract previous translation vector
+    
+                curr_pose = np.reshape(poses[i][-9:], (3, 3))  # Extract current rotation matrix
+                curr_t = poses[i][:3]  # Extract current translation vector
+    
+                # Calculate relative rotation
+                relative_rot = np.dot(curr_pose, prev_pose.T)  # Relative rotation matrix
+    
+                # Calculate relative translation
+                relative_t = curr_t - prev_t  # Relative translation vector
+    
+                # Convert relative rotation matrix to Euler angles
+                relative_euler = R.from_matrix(relative_rot).as_euler('xyz', degrees=True)
+    
+                # Construct the relative pose (theta_x, theta_y, theta_z, x, y, z)
+                relative_pose = np.concatenate((relative_euler, relative_t, relative_rot.flatten()))
+                assert(relative_pose.shape == (15,))
+                relative_poses.append(relative_pose)
+            # 'relative_poses' now contains the relative poses to the previous pose
    
             # Save as .npy file
-			poses = np.array(poses)
-			base_fn = os.path.splitext(fn)[0]
-			np.save(base_fn +'.npy', poses)
-   
-			# Print the shape of the data
-			print('Video {}: shape={}'.format(video, poses.shape))
+            poses = np.array(relative_poses)
+            base_fn = os.path.splitext(fn)[0]
+            np.save(base_fn +'.npy', poses)
+            
+            # Print the shape of the data
+            print('Video {}: shape={}'.format(video, poses.shape))
+            print(poses[0])
+            print(poses[1])
+            
 
 # Sample reference:
 # https://github.com/ChiWeiHsiao/DeepVO-pytorch/blob/bb43825e54b0d96d40bfe8b30013d5438f607908/data_helper.py#L15-L78
 def get_data_info(seq_len_range, 
                   overlap, 
-                  data_path='../datasets/KITTI/training/image_0/*.png',
+                  data_path='../datasets/KITTI/training/04/*.png',
                   gt_path='../datasets/KITTI/pose_GT/04.npy',
                   sample_times=1,
                   shuffle=False, 
@@ -124,13 +190,63 @@ def get_data_info(seq_len_range,
         df = df.sort_values(by=['seq_len'], ascending=False)
         
     return df
-   
+
+def calculate_rgb_mean_std(image_path_list, minus_point_5=False):
+	n_images = len(image_path_list)
+	cnt_pixels = 0
+	print('Numbers of frames in training dataset: {}'.format(n_images))
+	mean_np = [0, 0, 0]
+	mean_tensor = [0, 0, 0]
+	to_tensor = transforms.ToTensor()
+     
+	for idx, img_path in enumerate(image_path_list):
+		print('{} / {}'.format(idx, n_images), end='\r')
+		img_as_img = Image.open(img_path)
+		img_as_tensor = to_tensor(img_as_img)
+		if minus_point_5:
+			img_as_tensor = img_as_tensor - 0.5
+		img_as_np = np.array(img_as_img)
+		img_as_np = np.rollaxis(img_as_np, 2, 0)
+		cnt_pixels += img_as_np.shape[1]*img_as_np.shape[2]
+		for c in range(3):
+			mean_tensor[c] += float(torch.sum(img_as_tensor[c]))
+			mean_np[c] += float(np.sum(img_as_np[c]))
+	mean_tensor =  [v / cnt_pixels for v in mean_tensor]
+	mean_np = [v / cnt_pixels for v in mean_np]
+	print('mean_tensor = ', mean_tensor)
+	print('mean_np = ', mean_np)
+
+	std_tensor = [0, 0, 0]
+	std_np = [0, 0, 0]
+	for idx, img_path in enumerate(image_path_list):
+		print('{} / {}'.format(idx, n_images), end='\r')
+		img_as_img = Image.open(img_path)
+		img_as_tensor = to_tensor(img_as_img)
+		if minus_point_5:
+			img_as_tensor = img_as_tensor - 0.5
+		img_as_np = np.array(img_as_img)
+		img_as_np = np.rollaxis(img_as_np, 2, 0)
+		for c in range(3):
+			tmp = (img_as_tensor[c] - mean_tensor[c])**2
+			std_tensor[c] += float(torch.sum(tmp))
+			tmp = (img_as_np[c] - mean_np[c])**2
+			std_np[c] += float(np.sum(tmp))
+	std_tensor = [math.sqrt(v / cnt_pixels) for v in std_tensor]
+	std_np = [math.sqrt(v / cnt_pixels) for v in std_np]
+	print('std_tensor = ', std_tensor)
+	print('std_np = ', std_np)
+
 # Test the above functions
 if __name__ == '__main__':
-	create_pose_data()
 
-	overlap = 1
-	sample_times = 1
-	folder_list = ['04']
-	seq_len_range = [5, 7]
-	df = get_data_info(seq_len_range, overlap, sample_times=sample_times)
+    clean_unused_images()
+    create_pose_data()
+
+    overlap = 1
+    sample_times = 1
+    folder_list = ['04']
+    seq_len_range = [5, 7]
+    df = get_data_info(seq_len_range, overlap, sample_times=sample_times)
+
+    image_path_list = glob.glob('../datasets/KITTI/training/04/*.png')
+    calculate_rgb_mean_std(image_path_list)
