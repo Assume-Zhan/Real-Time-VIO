@@ -206,6 +206,9 @@ if __name__ == '__main__':
         
     print('################# Finish training #################')
 
+    # Save model
+    torch.save(model.state_dict(), 'model.pth')
+
     prediction_1(model)
         
         

@@ -80,3 +80,30 @@ check out downloader.sh to see which file to download for each folder (for examp
         - 02/
         - 03/
         - 04/
+
+## Train the model
+
+### Step 1: Go to correct directory
+```bash
+cd Read-Time-VIO
+```
+
+### Step 2: Run the training script
+```bash
+python3 train.py
+```
+
+## Inference
+
+### Step 1: Go to correct directory
+```bash
+cd Read-Time-VIO
+```
+
+### Step 2: Run the inference script
+
+- Please check the model weight path in the inference.py file before running the script.
+
+```bash
+python3 inference.py
+```
