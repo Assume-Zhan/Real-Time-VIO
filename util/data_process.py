@@ -3,6 +3,10 @@ import glob
 import numpy as np
 import pandas as pd
 from helper import R_to_angle
+import math
+import torch
+from torchvision import transforms
+from PIL import Image
 from scipy.spatial.transform import Rotation as R
 
 def clean_unused_images():
@@ -186,7 +190,52 @@ def get_data_info(seq_len_range,
         df = df.sort_values(by=['seq_len'], ascending=False)
         
     return df
-   
+
+def calculate_rgb_mean_std(image_path_list, minus_point_5=False):
+	n_images = len(image_path_list)
+	cnt_pixels = 0
+	print('Numbers of frames in training dataset: {}'.format(n_images))
+	mean_np = [0, 0, 0]
+	mean_tensor = [0, 0, 0]
+	to_tensor = transforms.ToTensor()
+     
+	for idx, img_path in enumerate(image_path_list):
+		print('{} / {}'.format(idx, n_images), end='\r')
+		img_as_img = Image.open(img_path)
+		img_as_tensor = to_tensor(img_as_img)
+		if minus_point_5:
+			img_as_tensor = img_as_tensor - 0.5
+		img_as_np = np.array(img_as_img)
+		img_as_np = np.rollaxis(img_as_np, 2, 0)
+		cnt_pixels += img_as_np.shape[1]*img_as_np.shape[2]
+		for c in range(3):
+			mean_tensor[c] += float(torch.sum(img_as_tensor[c]))
+			mean_np[c] += float(np.sum(img_as_np[c]))
+	mean_tensor =  [v / cnt_pixels for v in mean_tensor]
+	mean_np = [v / cnt_pixels for v in mean_np]
+	print('mean_tensor = ', mean_tensor)
+	print('mean_np = ', mean_np)
+
+	std_tensor = [0, 0, 0]
+	std_np = [0, 0, 0]
+	for idx, img_path in enumerate(image_path_list):
+		print('{} / {}'.format(idx, n_images), end='\r')
+		img_as_img = Image.open(img_path)
+		img_as_tensor = to_tensor(img_as_img)
+		if minus_point_5:
+			img_as_tensor = img_as_tensor - 0.5
+		img_as_np = np.array(img_as_img)
+		img_as_np = np.rollaxis(img_as_np, 2, 0)
+		for c in range(3):
+			tmp = (img_as_tensor[c] - mean_tensor[c])**2
+			std_tensor[c] += float(torch.sum(tmp))
+			tmp = (img_as_np[c] - mean_np[c])**2
+			std_np[c] += float(np.sum(tmp))
+	std_tensor = [math.sqrt(v / cnt_pixels) for v in std_tensor]
+	std_np = [math.sqrt(v / cnt_pixels) for v in std_np]
+	print('std_tensor = ', std_tensor)
+	print('std_np = ', std_np)
+
 # Test the above functions
 if __name__ == '__main__':
 
@@ -198,3 +247,6 @@ if __name__ == '__main__':
     folder_list = ['04']
     seq_len_range = [5, 7]
     df = get_data_info(seq_len_range, overlap, sample_times=sample_times)
+
+    image_path_list = glob.glob('../datasets/KITTI/training/04/*.png')
+    calculate_rgb_mean_std(image_path_list)
