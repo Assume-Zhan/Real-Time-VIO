@@ -1,6 +1,7 @@
 import sys
 sys.path.append('util')
 
+import argparse
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -13,6 +14,10 @@ import glob
 from tqdm import tqdm
 import numpy as np
 import time
+
+from optical_flow_model.models.raft import RAFT
+from optical_flow_model.utils.utils import InputPadder
+import optical_flow_model.utils.dataset_kittiflow as dataset_kittiflow
 
 def lossFunction(prediction, correction):
     angle_loss = torch.nn.functional.mse_loss(prediction[:,:3], correction[:,:3])
@@ -100,6 +105,16 @@ def prediction_1(model):
             f.write('\n')
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', help="restore checkpoint")
+    parser.add_argument('--data', help="path of the dataset to be inferenced, just type 'kittiflow' if you wanna inference the KittiFlow dataset")
+    parser.add_argument('--iters', type=int, default=12)
+    parser.add_argument('--mixed_precision', action='store_true', help='use mixed precision')
+    parser.add_argument('--output_path', type=str, help='your desired output path')
+    parser.add_argument('--small', action='store_true', help='use small model')
+
+    args = parser.parse_args()
     
     # Load Data with dataloader
     overlap = 0
@@ -120,9 +135,13 @@ if __name__ == '__main__':
     dataloader = DataLoader(dataset, batch_sampler=sorted_sampler, num_workers=n_workers)
     
     # Setup model
+    op_model = torch.nn.DataParallel(RAFT(args))
+    op_model.load_state_dict(torch.load(args.model))
+    op_model.cuda()
+    op_model.eval()
+
     model = PoseNet()
     model = model.cuda()
-    
     model.train()
     
     # Setup Optimizer
@@ -130,12 +149,27 @@ if __name__ == '__main__':
     
     print('################# Start training #################')
     
+    test_dataset = dataset_kittiflow.KITTI(split='testing', aug_params=None)
+    
     # Pass data
     for i in range(40):
         loss_all = 0
-        for _, x, y in tqdm(dataloader):
+        for _id, x, y in tqdm(dataloader):
 
-            # y = y.view(y.size(0) * y.size(1), -1)
+            # First do Optical Flow inference
+            image1, image2, (frame_id, ) = test_dataset[_id]
+            padder = InputPadder(image1.shape, mode='kitti')
+            image1, image2 = padder.pad(image1[None].cuda(), image2[None].cuda())
+            
+            _, flow_pr = model(image1, image2, iters=12, test_mode=True)
+            
+            flow = padder.unpad(flow_pr[0]).permute(1, 2, 0).cpu().numpy()
+            flow = 64.0 * flow + 2**15
+            valid = np.ones([flow.shape[0], flow.shape[1], 1])
+            flow = np.concatenate([flow, valid], axis=-1).astype(np.uint16)
+
+            # Use flow as input x
+            x = torch.from_numpy(flow).permute(2, 0, 1).float()
             
             x = torch.squeeze(x).cuda()
             y = torch.squeeze(y).cuda()
