@@ -29,9 +29,9 @@ def load_image(imfile):
     return img[None].to(DEVICE)
 
 def writeFlowKITTI(filename, uv):
-    # uv = 64.0 * uv + 2**15
-    # valid = np.ones([uv.shape[0], uv.shape[1], 1])
-    # uv = np.concatenate([uv, valid], axis=-1).astype(np.uint16)
+    uv = 64.0 * uv + 2**15
+    valid = np.ones([uv.shape[0], uv.shape[1], 1])
+    uv = np.concatenate([uv, valid], axis=-1).astype(np.uint16)
     cv2.imwrite(filename, uv)
     
 @torch.no_grad()
@@ -61,8 +61,12 @@ def inference(model, data=None, iters=24, output_path='submission'):
             
             print("--- %s fps ---" % (1/(t2-t1)))
             
-            flow = flow_pr[0].permute(1, 2, 0).cpu().numpy()
-            flow = flow_viz.flow_to_image(flow)
+            # flow = flow_pr[0].permute(1, 2, 0).cpu().numpy()
+            # flow = flow_viz.flow_to_image(flow)
+            # output_filename = os.path.join(output_path, frame_id)
+            # writeFlowKITTI(output_filename, flow)
+            
+            flow = padder.unpad(flow_pr[0]).permute(1, 2, 0).cpu().numpy()
             output_filename = os.path.join(output_path, frame_id)
             writeFlowKITTI(output_filename, flow)
     
