@@ -1,0 +1,90 @@
+name: 'Bug Report'
+# NOTE:   GitHub limits the description length to 200 characters.
+#         Also, Markdown doesn't work here.
+# AWARE:  'required' option is not supported for private repos.
+#         See https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms#about-yaml-syntax-for-issue-forms
+description: |
+    For help, use the Discussions section instead.  Write the title in English
+    to make it easier for other people to search for duplicates.
+title: '[Bug]: '
+labels: ['bug']
+body:
+  - type: 'checkboxes'
+    id: 'prerequisites'
+    attributes:
+      label: 'Prerequisites'
+      description: >
+        Please make sure that the issue is not a duplicate or a question.
+        If it's a duplicate, please react to the original issue with a
+        thumbs up.  If it's a question, please post it to the GitHub
+        Discussions page.
+      options:
+        - label: >
+            I have read the above and I am not posting a duplicate or a question.
+          required: true
+        - label: >
+            I feel pretty good about this issue.
+          required: false
+  - type: 'dropdown'
+    id: 'platform'
+    attributes:
+      label: 'Platform (OS and CPU architecture)'
+      description: >
+        On which Platform does the issue occur?
+      options:
+        - 'Ubuntu 20.04 Focal Fossa (amd64)'
+        - 'Ubuntu 22.04 Jammy Jellyfish (amd64)'
+        - 'Ubuntu 20.04 Jammy Jellyfish (arm64)'
+        - 'Ubuntu 22.04 Jammy Jellyfish (arm64)'
+        - 'Linux, AMD64 (aka x86_64)'
+        - 'Linux, ARM64 (aka aarch64)'
+        - 'Darwin (aka macOS), AMD64'
+        - 'Darwin (aka macOS), ARM64'
+        - 'Windows, AMD64'
+        - 'Windows, ARM64'
+        - 'Other (please mention in the description)'
+    validations:
+      required: true
+  - type: 'textarea'
+    id: 'action'
+    attributes:
+      label: 'Action'
+      description: >
+        Please describe what you did.  
+        For crashes, please provide a full failure log.
+      # placeholder: >
+      #   What you did?
+    validations:
+      required: true
+  - type: 'textarea'
+    id: 'expected-result'
+    attributes:
+      label: 'Expected result'
+      description: >
+        What did you expect to see?  Please add a description and/or
+        screenshots, if applicable.
+      # placeholder: >
+      #   What did you expect to see?
+    validations:
+      required: true
+  - type: 'textarea'
+    id: 'actual-result'
+    attributes:
+      label: 'Actual result'
+      description: >
+        What happened instead?  Please add a description and/or screenshots,
+        if applicable.
+      # placeholder: >
+      #   What did you see instead?
+    validations:
+      required: true
+  - type: 'textarea'
+    id: 'additional-information'
+    attributes:
+      label: 'Additional information'
+      description: >
+        Please add any additional information that you think might be useful.
+      # placeholder: >
+      #   Additional information
+    validations:
+      required: false

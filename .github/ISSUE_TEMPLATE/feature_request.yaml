@@ -1,0 +1,51 @@
+name: 'Feature Request or Enhancement'
+# NOTE:   GitHub limits the description length to 200 characters.
+#         Also, Markdown doesn't work here.
+# AWARE:  'required' option is not supported for private repos.
+#         See https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms#about-yaml-syntax-for-issue-forms
+description: |
+    Write the title in English to make it easier for other people to search for
+    duplicates.
+labels: 
+  - 'enhancement'
+body:
+  - type: 'checkboxes'
+    id: 'prerequisites'
+    attributes:
+      label: 'Prerequisites'
+      description: >
+        Please make sure that the issue is not a duplicate or a question.
+        If it's a duplicate, please react to the original issue with a
+        thumbs up.  If it's a question, please post it to the GitHub
+        Discussions page.
+      options:
+        - label: >
+            I have read the above and I am not posting a duplicate or a question.
+          required: true
+        - label: >
+            I feel pretty good about this issue.
+          required: false
+  - type: 'textarea'
+    id: 'problem'
+    attributes:
+      label: 'The Problem'
+      description: >
+        Please describe the problem you are trying to solve.
+    validations:
+      required: true
+  - type: 'textarea'
+    id: 'proposed_solution'
+    attributes:
+      label: 'Proposed Solution'
+      description: >
+        What feature are you proposing to solve this problem?
+    validations:
+      required: true
+  - type: 'textarea'
+    id: 'additional'
+    attributes:
+      label: 'Alternatives considered and additional information'
+      placeholder: >
+        Are there any other ways to solve the problem?
+    validations:
+      required: false
